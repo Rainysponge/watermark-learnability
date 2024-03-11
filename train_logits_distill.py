@@ -757,21 +757,21 @@ def main():
         model.resize_token_embeddings(len(tokenizer))
     
 
-    for name, param in model.named_parameters():
-        if len(name.split(".")) > 4 and name.split(".")[3].isdigit():
-            if int(name.split(".")[3]) < 19:
-                param.requires_grad = False
+    # for name, param in model.named_parameters():
+    #     if len(name.split(".")) > 4 and name.split(".")[3].isdigit():
+    #         if int(name.split(".")[3]) < 19:
+    #             param.requires_grad = False
     
-    all_params = model.parameters()
+    # all_params = model.parameters()
 
-    # 统计总参数数量
-    total_params = sum(p.numel() for p in all_params)
+    # # 统计总参数数量
+    # total_params = sum(p.numel() for p in all_params)
 
-    # 统计需要训练的参数数量
-    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    # # 统计需要训练的参数数量
+    # trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    print("Total parameters:", total_params)
-    print("Total trainable parameters:", trainable_params)
+    # print("Total parameters:", total_params)
+    # print("Total trainable parameters:", trainable_params)
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
