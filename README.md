@@ -95,7 +95,7 @@ Rewrite the code in train_logits_distill.py
 ```python
 for name, param in model.named_parameters():
     if len(name.split(".")) > 4 and name.split(".")[3].isdigit():
-        if int(name.split(".")[3]) < 19:
+        if int(name.split(".")[3]) < 20:
             # Only train the last 4 layers
             param.requires_grad = False
 
