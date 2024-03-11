@@ -46,7 +46,7 @@ Using train_sampling_distill.py is similar to using train_logits_distill.py.
 
 ### Generate text
 
-Create your own train data load code as following
+Create your own train data loading code as follows:
 ```python
 def c4_data():
     file_name = "./datasets/c4-train.00001-of-00512.json"
