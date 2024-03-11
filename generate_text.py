@@ -273,7 +273,7 @@ def generate(prompt, args, model=None, device=None, tokenizer=None):
     return (redecoded_input, int(truncation_warning), decoded_output_without_watermark, args)
 
 
-def learn_watwemark():
+def alpaca_data():
     file_name = "./datasets/alpaca_data.json"
     with open(file_name, "r+") as f:
         content = json.load(f)
@@ -305,7 +305,7 @@ def c4_data():
 
 if __name__ == "__main__":
    
-    data = learn_watwemark()
+    data = alpaca_data()
     args = parse_args()
     model_name = "opt_kgw"
     args.normalizers = args.normalizers.split(",") if args.normalizers else []

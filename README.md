@@ -43,5 +43,49 @@ Directory used to store the trained model. In order to better use the subsequent
 Using train_sampling_distill.py is similar to using train_logits_distill.py.
 
 ## Detector
-To be continue.
+
+### Generate text
+
+Create your own train data load code as following
+```python
+def c4_data():
+    file_name = "./datasets/c4-train.00001-of-00512.json"
+    data = []
+    with open(file_name, "r") as f:
+        for line_num, line in enumerate(f, start=1):
+            try:
+                obj = json.loads(line)
+                data.append(obj)
+            except json.JSONDecodeError as e:
+                print(f"Error in line {line_num}: {e}")
+    
+    return [
+        item["text"]
+        for item in data
+    ]
+```
+And then, rewrite the following codes.
+```python
+    outputs_file = {
+        "samples": {
+            model_name: {
+                "watermark_config": [{"vocab_size": 50265, "gamma": 0.5, "delta": 2.0, "seeding_scheme": "simple_1", "hash_key": 15485863, "select_green_tokens": True}],
+                "model_text": [],
+            },
+        }
+    }
+```
+
+And then, utilize the dataset and your own model to generate answers.
+
+```cmd
+torchrun generate_text.py --model_name_or_path the_path_to_your_model --output_file ./output.txt
+```
+
+### Detection
+
+Taking compute_watermark_scores.py as an example.
+```cmd
+torchrun compute_watermark_scores.py --tokenizer_name the_path_to_your_model --input_file the_file_generated_by_your_own_model --output_file the_file_for_saving_the_score
+```
 
