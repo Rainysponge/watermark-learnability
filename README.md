@@ -22,7 +22,17 @@ pip install -r requirements.txt
 
 ### torchrun
 ```cmd
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 train_logits_distill.py --train_file ./datasets/alpaca_data.json - --model_name opt --model_name_or_path facebook/opt-1.3b     --do_train   --fp16     --per_device_train_batch_size 4     --learning_rate 2e-5     --num_train_epochs 1     --output_dir ./output/    --overwrite_output_dir     --save_steps 0     --save_strategy "no" --watermark_type kgw --argmax_watermark false --do_eval False
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 train_logits_distill.py \
+--train_file ./datasets/alpaca_data.json \
+--model_name opt \ 
+--model_name_or_path facebook/opt-1.3b \ 
+--do_train   --fp16     \ 
+--per_device_train_batch_size 4     \ 
+--learning_rate 2e-5     --num_train_epochs 1     \ 
+--output_dir ./output/    \ 
+--overwrite_output_dir     --save_steps 0      \
+--save_strategy "no" \ 
+--watermark_type kgw --argmax_watermark false --do_eval False
 ```
 - model_name The name of the model in Huggingface or the path on local path.
 ### deepspeed
@@ -30,7 +40,17 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 train_logits_distill.py --t
 For more details on Deepspeed, see [DeepseedExample](https://github.com/microsoft/DeepSpeedExamples).
 ```cmd
 # zero 2
-deepspeed --num_nodes=1 --num_gpus=2 train_logits_distill.py --train_file ./datasets/alpaca_data.json --deepspeed ./ds_config_fp16_z2.json    --model_name_or_path /mnt/workspace/huzhanyi/pythia_/Models/OPT/1.3B     --do_train     --do_eval     --fp16     --per_device_train_batch_size 4     --learning_rate 2e-5     --num_train_epochs 1     --output_dir ./output/opt_kgw     --overwrite_output_dir     --save_steps 0     --save_strategy "no" --watermark_type kgw --argmax_watermark false --do_eval False
+deepspeed --num_nodes=1 --num_gpus=2 train_logits_distill.py \ 
+--train_file ./datasets/alpaca_data.json \ 
+--deepspeed ./ds_config_fp16_z2.json    \ 
+--model_name_or_path path_to_origin_model     \ 
+--do_train     --do_eval     --fp16     \ 
+--per_device_train_batch_size 4     \ 
+--learning_rate 2e-5     \ 
+--num_train_epochs 1     \ 
+--output_dir ./output/opt_kgw     \ 
+--overwrite_output_dir     --save_steps 0     --save_strategy "no" \ 
+--watermark_type kgw --argmax_watermark false --do_eval False
 ```
 
 - watermark_type 
@@ -79,14 +99,18 @@ And then, rewrite the following codes.
 And then, utilize the dataset and your own model to generate answers.
 
 ```cmd
-torchrun generate_text.py --model_name_or_path the_path_to_your_model --output_file ./output.txt
+torchrun generate_text.py \ 
+--model_name_or_path the_path_to_your_model \ 
+--output_file ./output.txt
 ```
 
 ### Detection
 
 Taking compute_watermark_scores.py as an example.
 ```cmd
-torchrun compute_watermark_scores.py --tokenizer_name the_path_to_your_model --input_file the_file_generated_by_your_own_model --output_file the_file_for_saving_the_score
+torchrun compute_watermark_scores.py --tokenizer_name the_path_to_your_model \ 
+--input_file the_file_generated_by_your_own_model \ 
+--output_file the_file_for_saving_the_score
 ```
 
 ## Layer Split
@@ -106,3 +130,7 @@ trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Total parameters:", total_params)
 print("Total trainable parameters:", trainable_params)
 ```
+
+## GPU
+
+For zero-2 without CPU offload, utilizing the alpaca dataset for full fine-tuning of OPT-1.3B necessitates two V100 GPUs (each with 32GB of memory), whereas fine-tuning only the last four layers of OPT-1.3B requires approximately 25GB of memory on two GPUs.
