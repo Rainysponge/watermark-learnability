@@ -89,3 +89,20 @@ Taking compute_watermark_scores.py as an example.
 torchrun compute_watermark_scores.py --tokenizer_name the_path_to_your_model --input_file the_file_generated_by_your_own_model --output_file the_file_for_saving_the_score
 ```
 
+## Layer Split
+
+Rewrite the code in train_logits_distill.py
+```python
+for name, param in model.named_parameters():
+    if len(name.split(".")) > 4 and name.split(".")[3].isdigit():
+        if int(name.split(".")[3]) < 19:
+            # Only train the last 4 layers
+            param.requires_grad = False
+
+all_params = model.parameters()
+total_params = sum(p.numel() for p in all_params)
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+print("Total parameters:", total_params)
+print("Total trainable parameters:", trainable_params)
+```
