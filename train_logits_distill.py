@@ -75,6 +75,7 @@ MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("torch.cuda.is_available()", torch.cuda.is_available(), device)
 
 
 class WatermarkType(StrEnum):
@@ -415,6 +416,8 @@ class WatermarkDistillTrainer(Trainer):
             teacher_outputs = self.teacher_model(**inputs)
 
         # argmax watermark, use cross entropy loss against one-hot labels
+        # 现场生产数据集
+        print("------------------------现场生产数据集-------------------------------")
         if self.argmax_watermark:
             watermark_tokens = self.watermarker.watermark_logits_argmax(
                 inputs["input_ids"],
@@ -595,7 +598,7 @@ def main():
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
-
+    print("----------------------set_seed(training_args.seed)--------------------------------------------------------")
     # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
     # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
     # (the dataset will be downloaded automatically from the datasets Hub).
@@ -713,7 +716,8 @@ def main():
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
-
+    print("----------------------Tokenizer--------------------------------------------------------")
+    print("----------------------Teacher_model Loading Starting----------------------")
     if model_args.model_name_or_path:
         torch_dtype = (
             model_args.torch_dtype
@@ -745,12 +749,29 @@ def main():
         teacher_model = AutoModelForCausalLM.from_config(config)
         n_params = sum({p.data_ptr(): p.numel() for p in model.parameters()}.values())
         logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
-
+    print("----------------------Teacher_model Loading Ending----------------------")
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
     embedding_size = model.get_input_embeddings().weight.shape[0]
     if len(tokenizer) > embedding_size:
         model.resize_token_embeddings(len(tokenizer))
+    
+
+    for name, param in model.named_parameters():
+        if len(name.split(".")) > 4 and name.split(".")[3].isdigit():
+            if int(name.split(".")[3]) < 19:
+                param.requires_grad = False
+    
+    all_params = model.parameters()
+
+    # 统计总参数数量
+    total_params = sum(p.numel() for p in all_params)
+
+    # 统计需要训练的参数数量
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    print("Total parameters:", total_params)
+    print("Total trainable parameters:", trainable_params)
 
     # Preprocessing the datasets.
     # First we tokenize all the texts.
@@ -759,7 +780,7 @@ def main():
     else:
         column_names = list(raw_datasets["validation"].features)
     text_column_name = "text" if "text" in column_names else column_names[0]
-
+    print("----------------------------Load Datset-------------------------------")
     # since this will be pickled to avoid _LazyModule error in Hasher force logger loading before tokenize_function
     tok_logger = transformers.utils.logging.get_logger("transformers.tokenization_utils_base")
 
@@ -807,7 +828,7 @@ def main():
                 f"({tokenizer.model_max_length}). Using block_size={tokenizer.model_max_length}."
             )
         block_size = min(data_args.block_size, tokenizer.model_max_length)
-
+    print("----------------------------Tokenize End-------------------------------")
     # Main data processing function that will concatenate all texts from our dataset and generate chunks of block_size.
     def group_texts(examples):
         # Concatenate all texts.
@@ -855,7 +876,7 @@ def main():
             if not data_args.streaming:
                 max_train_samples = min(len(train_dataset), data_args.max_train_samples)
                 train_dataset = train_dataset.select(range(max_train_samples))
-
+    
     if training_args.do_eval:
         if "validation" not in tokenized_datasets:
             raise ValueError("--do_eval requires a validation dataset")
@@ -882,7 +903,6 @@ def main():
             labels = labels[:, 1:].reshape(-1)
             preds = preds[:, :-1].reshape(-1)
             return metric.compute(predictions=preds, references=labels)
-        
     # Initialize watermarker
     if model_args.watermark_type == WatermarkType.AAR:
         watermarker = AarWatermark(
@@ -914,7 +934,7 @@ def main():
         assert not model_args.argmax_watermark, "KGW watermark only supports non-argmax watermarking"
     else:
         raise ValueError(f"Invalid watermark type: {model_args.watermark_type}")
-
+    print("----------------------------Training-------------------------------")
     # Initialize our Trainer
     teacher_model = teacher_model.to(device)
 
@@ -943,6 +963,7 @@ def main():
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
+        # train_result = trainer.train()
         trainer.save_model()  # Saves the tokenizer too for easy upload
 
         metrics = train_result.metrics
@@ -985,10 +1006,8 @@ def main():
         else:
             kwargs["dataset"] = data_args.dataset_name
 
-    if training_args.push_to_hub:
-        trainer.push_to_hub(**kwargs)
-    else:
-        trainer.create_model_card(**kwargs)
+
+    print("-------------------------All End-------------------------------------------------------")
 
 
 def _mp_fn(index):

@@ -1,5 +1,5 @@
 from typing import Optional
-
+from tqdm import trange
 import torch
 from transformers import AutoTokenizer
 
@@ -27,7 +27,7 @@ class KGWWatermark:
             fill_value=False,
             dtype=bool,
         )
-        for i in self.watermark_base.vocab:
+        for i in trange(len(self.watermark_base.vocab), desc='Processing Watermark Base'):
             greenlist_ids = self.watermark_base._get_greenlist_ids(torch.tensor([i], dtype=torch.long))
             self.greenlist_masks[i, greenlist_ids] = True
 
