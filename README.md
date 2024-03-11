@@ -106,3 +106,7 @@ trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Total parameters:", total_params)
 print("Total trainable parameters:", trainable_params)
 ```
+
+## GPU
+
+For zero-2 without CPU offload, utilizing the alpaca dataset for full fine-tuning of OPT-1.3B necessitates two V100 GPUs (each with 32GB of memory), whereas fine-tuning only the last four layers of OPT-1.3B requires approximately 25GB of memory on two GPUs.
