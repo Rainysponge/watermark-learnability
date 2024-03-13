@@ -131,6 +131,48 @@ print("Total parameters:", total_params)
 print("Total trainable parameters:", trainable_params)
 ```
 
+## Metrics
+
+### Watermark Scores
+We use p-values to measure the effectiveness of the watermark.
+
+```cmd
+python compute_watermark \
+    --tokenizer_name path_to_your_model \
+    --input_file path_to_model_ouput_file \
+    --ouput_file parh_to_save_file
+```
+
+## Train Model
+After injecting the watermark into a model, we also need to evaluate the robustness of the watermark when the model still needs to be fine-tuned.
+You can either use train_sampling_distill.py or write your own training code.
+```cmd
+deepspeed --num_nodes=1 --num_gpus=2 train_sampling_distill.py \
+    --train_file path_to_your_train_data \
+    --deepspeed ./ds_config_fp16_z2.json \
+    --model_name_or_path path_to_your_watermarked_model \
+    --do_train --fp16 \
+    --per_device_train_batch_size bathc_size \
+    --learning_rate 2e-5 \
+    --num_train_epochs 1 \
+    --output_dir path_to_save_the_model \
+    --overwrite_output_dir --save_steps 0 \
+    --save_strategy "no" \
+    --do_eval False \
+    --block_size 512
+```
+"block_size" refers to the maximum length of the input tokens.
+
+### Original Task
+For different tasks, the metrics used for evaluation may vary. Here we use the CD and BoolQ datasets as examples. 
+Since both tasks are classification tasks, we can calculate their accuracy using the following command.
+```cmd
+python compute_original_task.py \
+    --task task_name \
+    --data_file date_file_with_label \
+    --result_file path_to_model_output
+```
+
 ## GPU
 
 For zero-2 without CPU offload, utilizing the alpaca dataset for full fine-tuning of OPT-1.3B necessitates two V100 GPUs (each with 32GB of memory), whereas fine-tuning only the last four layers of OPT-1.3B requires approximately 25GB of memory on two GPUs.
